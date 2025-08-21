@@ -15,7 +15,7 @@ int is_ignored(const wchar_t* relForward,int isDir,Pattern* pats,int n){
 }
 
 int load_patterns(const wchar_t* root,Pattern* out){
-    wchar_t fp[MAX_PATH_LEN]; swprintf(fp,MAX_PATH_LEN,L"%s\\.backupignore",root);
+    wchar_t fp[MAX_PATH_LEN]; swprintf(fp,MAX_PATH_LEN,L"%s\\.filterignore",root);
     FILE* f = NULL;
     errno_t err = _wfopen_s(&f, fp,L"rt, ccs=UTF-8");
     if(err != 0 || !f) err = _wfopen_s(&f, fp,L"rt");
