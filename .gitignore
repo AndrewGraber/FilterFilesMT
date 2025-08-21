@@ -1,0 +1,39 @@
+.git/
+
+# --- Visual Studio / Windows / IDE ---
+*.exe
+*.pdb
+*.obj
+*.ilk
+*.user
+*.code-workspace
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
+*.sln
+*.suo
+.vscode/
+Thumbs.db
+Desktop.ini
+*.DS_Store
+
+# --- CMake Files ---
+/Build/
+CMakeCache.txt
+cmake_install.cmake
+CMakeFiles/
+ALL_BUILD.vcxproj
+ALL_BUILD.vcxproj.filters
+ZERO_CHECK.vcxproj
+ZERO_CHECK.vcxproj.filters
+
+# --- Temporary / Log files ---
+*.tmp
+*.old
+*.log
+
+# --- Project Specific (if used by FilterFilesMT) ---
+*.txt
+*.filterignore
+/TestData/
+/Tests/
