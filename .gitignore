@@ -34,6 +34,7 @@ ZERO_CHECK.vcxproj.filters
 
 # --- Project Specific (if used by FilterFilesMT) ---
 *.txt
+!CMakeLists.txt
 *.filterignore
 /TestData/
 /Testing/
