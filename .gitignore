@@ -36,4 +36,4 @@ ZERO_CHECK.vcxproj.filters
 *.txt
 *.filterignore
 /TestData/
-/Tests/
+/Testing/
