@@ -1,0 +1,35 @@
+name: Release FilterFilesMT
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [created]
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+
+    - name: Configure CMake
+      run: cmake -S . -B Build -A x64
+
+    - name: Build
+      run: cmake --build Build --config Release
+
+    - name: Generate SHA256 Checksum
+      run: |
+        CertUtil -hashfile Build\Release\filterfilesmt.exe SHA256 | findstr /R "^[0-9a-f]*" > Build\Release\filterfilesmt.exe.sha256
+        type Build\Release\filterfilesmt.exe.sha256
+
+    - name: Upload Release Assets
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          Build/Release/filterfilesmt.exe
+          Build/Release/filterfilesmt.exe.sha256
