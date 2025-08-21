@@ -124,13 +124,14 @@ static DWORD WINAPI worker(LPVOID param){
                         wcscpy_s(printBuf, MAX_PATH_LEN, fullPath);
                         if(wcscmp(dir, L"")==0) { LeaveCriticalSection(&seenCS);continue; } // skip empty relative paths
                         
-                        struct stat fileStat;
+                        /*struct stat fileStat;
                         if(stat(wchar_to_utf8(fullPath), &fileStat) != 0) {
                             fwprintf(stderr,L"Unable to get file stats for: %s\n", fullPath);
                             return 1;
                         }
 
-                        wprintf(L"%s|%lld\n", printBuf, (long long)fileStat.st_size);
+                        wprintf(L"%s|%lld\n", printBuf, (long long)fileStat.st_size);*/
+                        wprintf(L"%s\n", printBuf);
                     }
                     LeaveCriticalSection(&seenCS);
                 }
