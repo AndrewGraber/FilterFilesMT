@@ -9,7 +9,7 @@
 #include "Utils/path_queue.h"
 #include "pattern_matching.h"
 
-#define MAX_THREADS    64
+#define MAX_THREADS 16
 
 typedef struct {
     DirQueue* q;
