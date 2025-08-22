@@ -1,0 +1,25 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What I Want
+      description: Description of the feature or enhancement I am requesting
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why I Want It
+      description: What is my motivation for adding this feature? How will it benefit me or others?
+    validations:
+      required: true
+
+  - type: textarea
+    id: extras
+    attributes:
+      label: It would also be nice if...
+      description: What are some things that wouldn't be required for this feature to be "complete", but would still be nice to have?

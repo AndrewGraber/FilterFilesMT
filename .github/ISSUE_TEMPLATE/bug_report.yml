@@ -1,0 +1,29 @@
+name: Bug Report
+description: Report something that isn't working correctly
+labels: [bug]
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: What I did
+      description: What did I do that led up to the issue taking place?
+      placeholder: |
+        1. Do this
+        2. Do that
+        3. See error
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What I Expected
+      description: What did I expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What Actually Happened
+      description: What actually happened? Do I have any idea why or how it could be fixed?
+    validations:
+      required: true
