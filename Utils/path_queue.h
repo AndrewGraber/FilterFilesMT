@@ -3,7 +3,7 @@
 
 #include <windows.h>
 
-#define MAX_PATH_LEN   512
+#define MAX_PATH_LEN   255
 #define QUEUE_CAP      8192
 
 typedef struct {
