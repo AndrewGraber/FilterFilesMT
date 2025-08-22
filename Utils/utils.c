@@ -20,6 +20,7 @@ void parse_args(int argc, wchar_t* argv[], CmdArgs* out) {
     out->patArgs = NULL;
     out->path = DEFAULT_PATH;
     out->numThreads = DEFAULT_THREADS;
+    out->patternFile = DEFAULT_PATTERN_FILE;
 
     int curArg = 1;
     while (curArg < argc) {
@@ -28,6 +29,13 @@ void parse_args(int argc, wchar_t* argv[], CmdArgs* out) {
                 out->path = argv[curArg];
             } else {
                 fwprintf(stderr, L"Expected a string after --path\n");
+                print_usage(argv[0]);
+            }
+        } else if (wcscmp(argv[curArg], L"--pattern-file") == 0) {
+            if (++curArg < argc) {
+                out->patternFile = argv[curArg];
+            } else {
+                fwprintf(stderr, L"Expected a file path after --pattern-file\n");
                 print_usage(argv[0]);
             }
         } else if(wcscmp(argv[curArg], L"--threads") == 0) {

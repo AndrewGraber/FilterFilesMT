@@ -178,17 +178,14 @@ int wmain(int argc,wchar_t* argv[]){
         safe_exit(1, args, NULL, NULL);
     }
 
-    wchar_t patternFile[MAX_PATH_LEN];
-    swprintf(patternFile, MAX_PATH_LEN, L"%s\\.filterignore", path);
-
     Pattern* pats = malloc(sizeof(Pattern)*MAX_PATTERNS); 
     int patCount = 0;
     if(!pats) {
         fwprintf(stderr,L"Memory allocation for patterns failed\n");
         safe_exit(1, args, pats, NULL);
     }
-    
-    patCount = load_patterns(patternFile, pats);
+
+    patCount = load_patterns(args->patternFile, pats);
 
     if(args->numPatArgs > 0) {
         // Load patterns from command line arguments

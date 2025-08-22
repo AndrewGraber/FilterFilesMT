@@ -7,10 +7,12 @@
 #define DEFAULT_THREADS 4
 #define MAX_THREADS 16
 #define DEFAULT_PATTERN L"*"
+#define DEFAULT_PATTERN_FILE L"./.filterignore"
 
 typedef struct {
     int numPatArgs, numThreads;
     wchar_t* path;
+    wchar_t* patternFile;
     wchar_t** patArgs;
 } CmdArgs;
 
