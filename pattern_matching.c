@@ -14,8 +14,7 @@ int is_ignored(const wchar_t* relForward,int isDir,Pattern* pats,int n){
     return ignore;
 }
 
-int load_patterns(const wchar_t* root,Pattern* out){
-    wchar_t fp[MAX_PATH_LEN]; swprintf(fp,MAX_PATH_LEN,L"%s\\.filterignore",root);
+int load_patterns_from_file(const wchar_t* fp, Pattern* out){
     FILE* f = NULL;
     errno_t err = _wfopen_s(&f, fp,L"rt, ccs=UTF-8");
     if(err != 0 || !f) err = _wfopen_s(&f, fp,L"rt");
@@ -25,14 +24,48 @@ int load_patterns(const wchar_t* root,Pattern* out){
     }
     int count=0; wchar_t line[MAX_PATH_LEN];
     while(fgetws(line,MAX_PATH_LEN,f)){
-        trim_ws(line); wchar_t* hash=wcschr(line,L'#'); if(hash){*hash=0; trim_ws(line);} if(!line[0]) continue;
-        Pattern* p=&out[count]; p->neg=0; p->anchored=0; p->dirOnly=0;
-        if(line[0]==L'!'){ p->neg=1; wcscpy_s(p->text,MAX_PATH_LEN,line+1);} else wcscpy_s(p->text,MAX_PATH_LEN,line);
-        trim_ws(p->text);
-        if(p->text[0]==L'/'){ p->anchored=1; memmove(p->text,p->text+1,(wcslen(p->text))*sizeof(wchar_t)); }
-        size_t Ln=wcslen(p->text); if(Ln && p->text[Ln-1]==L'/'){ p->dirOnly=1; p->text[Ln-1]=0; }
-        to_forward_slashes(p->text);
-        if(p->text[0]){ count++; if(count>=MAX_PATTERNS) break; }
+        int result = parse_pattern(line, &out[count]);
+
+        if(result){
+            count++;
+            if(count >= MAX_PATTERNS) break;
+        }
     }
     fclose(f); return count;
+}
+
+int parse_pattern(wchar_t* patIn, Pattern* patOut) {
+    trim_ws(patIn);
+    wchar_t* hash=wcschr(patIn,L'#');
+    if(hash) {
+        *hash=0;
+        trim_ws(patIn);
+    }
+
+    if(!patIn[0]) return 0;
+
+    patOut->neg=0; patOut->anchored=0; patOut->dirOnly=0;
+
+    if(patIn[0]==L'!') {
+        patOut->neg=1;
+        wcscpy_s(patOut->text,MAX_PATH_LEN,patIn+1);
+    } else {
+        wcscpy_s(patOut->text,MAX_PATH_LEN,patIn);
+    }
+
+    trim_ws(patOut->text);
+
+    if(patOut->text[0]==L'/'){
+        patOut->anchored=1;
+        memmove(patOut->text, patOut->text+1, (wcslen(patOut->text))*sizeof(wchar_t));
+    }
+
+    size_t Ln=wcslen(patOut->text);
+    if(Ln && patOut->text[Ln-1]==L'/'){
+        patOut->dirOnly=1;
+        patOut->text[Ln-1]=0;
+    }
+
+    to_forward_slashes(patOut->text);
+    return 1;
 }

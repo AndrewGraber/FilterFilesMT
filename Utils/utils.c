@@ -3,6 +3,62 @@
 #include <windows.h>
 #include <string.h>
 
+void print_usage(wchar_t* prog_name) {
+    fwprintf(stderr,L"Usage: %s --path <path> --threads <n>\n",prog_name);
+    exit(2);
+}
+
+void args_destroy(CmdArgs* args) {
+    if (!args) return;
+
+    free(args->patArgs);
+    free(args);
+}
+
+void parse_args(int argc, wchar_t* argv[], CmdArgs* out) {
+    out->numPatArgs = 0;
+    out->patArgs = NULL;
+    out->path = DEFAULT_PATH;
+    out->numThreads = DEFAULT_THREADS;
+
+    int curArg = 1;
+    while (curArg < argc) {
+        if(wcscmp(argv[curArg], L"--path") == 0) {
+            if (++curArg < argc) {
+                out->path = argv[curArg];
+            } else {
+                fwprintf(stderr, L"Expected a string after --path\n");
+                print_usage(argv[0]);
+            }
+        } else if(wcscmp(argv[curArg], L"--threads") == 0) {
+            if (++curArg < argc) {
+                out->numThreads = _wtoi(argv[curArg]);
+                if(out->numThreads > MAX_THREADS) out->numThreads = MAX_THREADS;
+            } else {
+                fwprintf(stderr, L"Expected a number after --threads\n");
+                print_usage(argv[0]);
+            }
+        } else if(wcscmp(argv[curArg], L"--pattern") == 0) {
+            if (++curArg < argc) {
+                out->numPatArgs++;
+                out->patArgs = realloc(out->patArgs, sizeof(wchar_t*) * out->numPatArgs);
+                if (!out->patArgs) {
+                    fwprintf(stderr, L"Memory allocation failed for pattern arguments\n");
+                    exit(1);
+                }
+                out->patArgs[out->numPatArgs - 1] = argv[curArg];
+            } else {
+                fwprintf(stderr, L"Expected a glob string after --pattern\n");
+                print_usage(argv[0]);
+            }
+        } else {
+            fwprintf(stderr, L"Argument not recognized: %s\n", argv[curArg]);
+            print_usage(argv[0]);
+        }
+        curArg++;
+    }
+}
+
 void trim_ws(wchar_t* s) {
     if (!s) return;
 

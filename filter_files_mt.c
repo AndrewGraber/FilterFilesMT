@@ -9,8 +9,6 @@
 #include "Utils/path_queue.h"
 #include "pattern_matching.h"
 
-#define MAX_THREADS 16
-
 typedef struct {
     DirQueue* q;
     volatile LONG* inflight;
@@ -152,52 +150,109 @@ static DWORD WINAPI worker(LPVOID param){
     return 0;
 }
 
+void safe_exit(int code, CmdArgs* args, Pattern* pats, DirQueue* q) {
+    if (args) args_destroy(args);
+    if (pats) free(pats);
+    if (q) q_destroy(q);
+    exit(code);
+}
+
 /* -------- main -------- */
 int wmain(int argc,wchar_t* argv[]){
-    if(argc<2){ fwprintf(stderr,L"Usage: %s <root> [threads]\n",argv[0]); return 2; }
+    CmdArgs* args = malloc(sizeof(CmdArgs));
+    if (!args) {
+        fwprintf(stderr, L"Memory allocation failed\n");
+        safe_exit(1, args, NULL, NULL);
+    }
+    parse_args(argc, argv, args);
 
-    wchar_t root[MAX_PATH_LEN];
-    if(!normalize_root(argv[1],root,MAX_PATH_LEN)){ fwprintf(stderr,L"Failed to resolve root: %s\n",argv[1]); return 3; }
-    DWORD attr=GetFileAttributesW(root);
-    if(attr==INVALID_FILE_ATTRIBUTES || !(attr&FILE_ATTRIBUTE_DIRECTORY)){ fwprintf(stderr,L"Path is not a directory: %s\n",root); return 3; }
-
-    int threads=1; 
-    if(argc>=3){ 
-        threads=_wtoi(argv[2]); 
-        if(threads<1) threads=1; 
-        if(threads>MAX_THREADS) threads=MAX_THREADS; 
+    wchar_t path[MAX_PATH_LEN];
+    if (!normalize_root(args->path, path, MAX_PATH_LEN)) {
+        fwprintf(stderr, L"Failed to resolve root: %s\n", args->path);
+        safe_exit(1, args, NULL, NULL);
     }
 
+    DWORD attr=GetFileAttributesW(path);
+    if (attr==INVALID_FILE_ATTRIBUTES || !(attr&FILE_ATTRIBUTE_DIRECTORY)) {
+        fwprintf(stderr, L"Path is not a directory: %s\n", path);
+        safe_exit(1, args, NULL, NULL);
+    }
+
+    wchar_t patternFile[MAX_PATH_LEN];
+    swprintf(patternFile, MAX_PATH_LEN, L"%s\\.filterignore", path);
+
     Pattern* pats = malloc(sizeof(Pattern)*MAX_PATTERNS); 
-    if(!pats){ fwprintf(stderr,L"alloc patterns failed\n"); return 1; }
-    int patCount = load_patterns(root, pats);
+    int patCount = 0;
+    if(!pats) {
+        fwprintf(stderr,L"Memory allocation for patterns failed\n");
+        safe_exit(1, args, pats, NULL);
+    }
+    
+    patCount = load_patterns(patternFile, pats);
+
+    if(args->numPatArgs > 0) {
+        // Load patterns from command line arguments
+        for (int i = 0; i < args->numPatArgs; i++) {
+            if (parse_pattern(args->patArgs[i], &pats[patCount]) == 0) {
+                fwprintf(stderr, L"Invalid pattern argument: %s\n", args->patArgs[i]);
+                continue;
+            }
+            patCount++;
+
+            if (patCount >= MAX_PATTERNS) {
+                fwprintf(stderr, L"Pattern limit of %d reached. Ignoring remaining patterns\n", MAX_PATTERNS);
+                break;
+            }
+        }
+    }
+
+    if (patCount == 0) {
+        fwprintf(stderr, L"No valid patterns found. Printing everything.\n");
+        pats[0].neg = 0;
+        pats[0].anchored = 0;
+        pats[0].dirOnly = 0;
+        wcscpy_s(pats[0].text, MAX_PATH_LEN, DEFAULT_PATTERN);
+        patCount++;
+    }
 
     DirQueue q={0};
-    if(!q_init(&q)){ fwprintf(stderr,L"Queue init failed\n"); free(pats); q_destroy(&q); return 1; }
+    if (!q_init(&q)) {
+        fwprintf(stderr,L"Queue init failed\n");
+        safe_exit(1, args, pats, &q);
+    }
 
     volatile LONG inflight=0, shutdown=0;
-    enqueue_dir(&q,&inflight,root);
+    enqueue_dir(&q, &inflight, args->path);
 
-    ThreadArg a={0};
-    a.q=&q; a.inflight=&inflight; a.shutdown=&shutdown;
-    a.pats=pats; a.patCount=patCount; wcscpy_s(a.root,MAX_PATH_LEN,root);
-    a.threadCount=threads;
+    ThreadArg a = {0};
+    a.q = &q;
+    a.inflight = &inflight;
+    a.shutdown = &shutdown;
+    a.pats = pats;
+    a.patCount = patCount;
+    wcscpy_s(a.root, MAX_PATH_LEN, args->path);
+    a.threadCount = args->numThreads;
 
     InitializeCriticalSection(&seenCS);  // init dedup CS
 
-    HANDLE th[MAX_THREADS]={0};
-    for(int i=0;i<threads;i++){
-        th[i]=CreateThread(NULL,0,worker,&a,0,NULL);
-        if(!th[i]){ fwprintf(stderr,L"CreateThread failed\n"); shutdown=1; threads=i; break; }
+    HANDLE th[MAX_THREADS] = {0};
+    for(int i=0; i < a.threadCount; i++) {
+        th[i] = CreateThread(NULL,0,worker,&a,0,NULL);
+        if (!th[i]) {
+            fwprintf(stderr,L"CreateThread failed\n");
+            shutdown=1;
+            a.threadCount = i;
+            break;
+        }
     }
 
-    WaitForMultipleObjects(threads,th,TRUE,INFINITE);
-    for(int i=0;i<threads;i++) if(th[i]) CloseHandle(th[i]);
+    WaitForMultipleObjects(a.threadCount, th, TRUE, INFINITE);
+    for(int i=0; i<a.threadCount; i++) if(th[i]) CloseHandle(th[i]);
 
     // free deduplication list
     EnterCriticalSection(&seenCS);
     SeenNode* node = seenHead;
-    while(node){
+    while(node) {
         SeenNode* next = node->next;
         free(node->path);
         free(node);
@@ -206,8 +261,5 @@ int wmain(int argc,wchar_t* argv[]){
     LeaveCriticalSection(&seenCS);
     DeleteCriticalSection(&seenCS);
 
-    q_destroy(&q);
-    free(pats);
-
-    return 0;
+    safe_exit(0, args, pats, &q); // cleanup and exit
 }
