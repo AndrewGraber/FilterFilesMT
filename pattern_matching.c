@@ -19,6 +19,7 @@ int load_patterns_from_file(const wchar_t* fp, Pattern* out){
     errno_t err = _wfopen_s(&f, fp,L"rt, ccs=UTF-8");
     if(err != 0 || !f) err = _wfopen_s(&f, fp,L"rt");
     if(err != 0 || !f) {
+        fwprintf(stderr,L"Pattern file not found: %s\n",fp);
         return 0;
     }
     int count=0; wchar_t line[MAX_PATH_LEN];

@@ -89,6 +89,22 @@ void trim_ws(wchar_t* s) {
     }
 }
 
+int is_absolute_path(const wchar_t* path) {
+    if (!path || !*path) return 0;
+
+    // Check for absolute path (Windows)
+    if (wcslen(path) > 2 && path[1] == L':' && (path[2] == L'\\' || path[2] == L'/')) {
+        return 1;
+    }
+
+    // Check for UNC path
+    if (wcslen(path) > 1 && path[0] == L'\\' && path[1] == L'\\') {
+        return 1;
+    }
+
+    return 0;
+}
+
 void to_forward_slashes(wchar_t* s){
     for(; *s; ++s) if(*s==L'\\') *s=L'/';
 }

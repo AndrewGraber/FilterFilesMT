@@ -95,6 +95,7 @@ static DWORD WINAPI worker(LPVOID param){
         WIN32_FIND_DATAW ffd; HANDLE h=FindFirstFileW(search,&ffd);
         if(h!=INVALID_HANDLE_VALUE){
             do{
+                fwprintf(stderr, L"Found file: %s\n", ffd.cFileName);
                 if(!wcscmp(ffd.cFileName,L".")||!wcscmp(ffd.cFileName,L"..")) continue;
 
                 path_concat(fullPath,MAX_PATH_LEN,dir,ffd.cFileName);
@@ -105,6 +106,8 @@ static DWORD WINAPI worker(LPVOID param){
                 wcscpy_s(relBuf,MAX_PATH_LEN,rel); 
                 to_forward_slashes(relBuf);
                 if(relBuf[0]==0) continue;
+
+                fwprintf(stderr, L"Relative path: %s\n", relBuf);
 
                 int isDir = (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? 1 : 0;
                 if(is_ignored(relBuf,isDir,a->pats,a->patCount)) continue;
@@ -168,6 +171,8 @@ int wmain(int argc,wchar_t* argv[]){
     }
     parse_args(argc, argv, args);
 
+    fwprintf(stderr, L"Filter file: %s\n", args->patternFile);
+
     wchar_t path[MAX_PATH_LEN];
     if (!normalize_root(args->path, path, MAX_PATH_LEN)) {
         fwprintf(stderr, L"Failed to resolve root: %s\n", args->path);
@@ -185,6 +190,16 @@ int wmain(int argc,wchar_t* argv[]){
     if(!pats) {
         fwprintf(stderr,L"Memory allocation for patterns failed\n");
         safe_exit(1, args, pats, NULL);
+    }
+
+    if (is_absolute_path(args->patternFile) != 1) {
+        fwprintf(stderr, L"Pattern file path is not absolute: %s\n", args->patternFile);
+
+        DWORD length = GetFullPathNameW(args->patternFile, MAX_PATH_LEN, args->patternFile, NULL);
+        if (length == 0 || length >= MAX_PATH_LEN) {
+            fwprintf(stderr, L"Failed to get full path of pattern file: %s\n", args->patternFile);
+            safe_exit(1, args, pats, NULL);
+        }
     }
 
     patCount = load_patterns_from_file(args->patternFile, pats);
