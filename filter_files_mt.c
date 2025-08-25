@@ -192,14 +192,8 @@ int wmain(int argc,wchar_t* argv[]){
         safe_exit(1, args, pats, NULL);
     }
 
-    if (is_absolute_path(args->patternFile) != 1) {
-        fwprintf(stderr, L"Pattern file path is not absolute: %s\n", args->patternFile);
-
-        DWORD length = GetFullPathNameW(args->patternFile, MAX_PATH_LEN, args->patternFile, NULL);
-        if (length == 0 || length >= MAX_PATH_LEN) {
-            fwprintf(stderr, L"Failed to get full path of pattern file: %s\n", args->patternFile);
-            safe_exit(1, args, pats, NULL);
-        }
+    if (wcscmp(args->patternFile, DEFAULT_PATTERN_FILE) == 0) {
+        prepend_folder_inplace(args->patternFile, MAX_PATH_LEN, args->path);
     }
 
     patCount = load_patterns_from_file(args->patternFile, pats);

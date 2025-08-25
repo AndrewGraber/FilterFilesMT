@@ -109,6 +109,34 @@ void to_forward_slashes(wchar_t* s){
     for(; *s; ++s) if(*s==L'\\') *s=L'/';
 }
 
+void prepend_folder_inplace(wchar_t *buffer, size_t buffer_capacity, const wchar_t *folder) {
+    size_t folder_len = wcslen(folder);
+    size_t file_len   = wcslen(buffer);
+    size_t total_len  = folder_len + file_len + 2; // +1 for '\' and +1 for '\0'
+
+    if (total_len > buffer_capacity) {
+        // not enough room
+        wprintf(L"Buffer too small!\n");
+        return;
+    }
+
+    // Shift existing filename forward
+    memmove(
+        buffer + folder_len + 1,  // destination
+        buffer,                   // source (the filename)
+        (file_len + 1) * sizeof(wchar_t)  // +1 to move the null terminator too
+    );
+
+    // Copy folder into the start of buffer
+    wcscpy(buffer, folder);
+
+    // Add '\' if needed
+    if (folder_len > 0 && buffer[folder_len - 1] != L'\\' && buffer[folder_len - 1] != L'/') {
+        buffer[folder_len] = L'\\';
+        buffer[folder_len + 1] = L'\0';
+    }
+}
+
 int ieq(wchar_t a, wchar_t b){
     if(a>=L'A' && a<=L'Z') a+=32;
     if(b>=L'A' && b<=L'Z') b+=32;
