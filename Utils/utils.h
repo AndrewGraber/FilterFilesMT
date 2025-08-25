@@ -22,7 +22,7 @@ void parse_args(int argc, wchar_t* argv[], CmdArgs* out);
 void trim_ws(wchar_t* s);
 int is_absolute_path(const wchar_t* path);
 void to_forward_slashes(wchar_t* s);
-void prepend_folder_inplace(wchar_t *buffer, size_t buffer_capacity, const wchar_t *folder);
+int prepend_folder_inplace(wchar_t *buffer, size_t buffer_capacity, const wchar_t *folder);
 int ieq(wchar_t a, wchar_t b);
 char* wchar_to_utf8(const wchar_t* wstr);
 

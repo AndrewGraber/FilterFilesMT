@@ -193,7 +193,12 @@ int wmain(int argc,wchar_t* argv[]){
     }
 
     if (wcscmp(args->patternFile, DEFAULT_PATTERN_FILE) == 0) {
-        prepend_folder_inplace(args->patternFile, MAX_PATH_LEN, args->path);
+        fwprintf(stderr, L"Using default pattern file in search path: %s\n", args->path);
+        if(!prepend_folder_inplace(args->patternFile, MAX_PATH_LEN, args->path)) {
+            fwprintf(stderr, L"Failed to prepend search folder to pattern file path\n");
+            safe_exit(1, args, pats, NULL);
+        }
+        fwprintf(stderr, L"Full pattern file path: %s\n", args->patternFile);
     }
 
     patCount = load_patterns_from_file(args->patternFile, pats);
