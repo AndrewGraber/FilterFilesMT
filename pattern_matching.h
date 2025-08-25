@@ -13,7 +13,7 @@ typedef struct {
 } Pattern;
 
 int is_ignored(const wchar_t* relForward,int isDir,Pattern* pats,int n);
-int load_patterns(const wchar_t* root,Pattern* out);
+int load_patterns_from_file(const wchar_t* fp,Pattern* out);
 int parse_pattern(wchar_t* patIn, Pattern* patOut);
 
 #endif // PATTERN_MATCHING_H

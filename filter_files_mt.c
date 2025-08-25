@@ -151,6 +151,8 @@ static DWORD WINAPI worker(LPVOID param){
 }
 
 void safe_exit(int code, CmdArgs* args, Pattern* pats, DirQueue* q) {
+    if (code != 0) fwprintf(stderr, L"Error code: %lu\n", GetLastError());
+
     if (args) args_destroy(args);
     if (pats) free(pats);
     if (q) q_destroy(q);
@@ -185,7 +187,7 @@ int wmain(int argc,wchar_t* argv[]){
         safe_exit(1, args, pats, NULL);
     }
 
-    patCount = load_patterns(args->patternFile, pats);
+    patCount = load_patterns_from_file(args->patternFile, pats);
 
     if(args->numPatArgs > 0) {
         // Load patterns from command line arguments
@@ -212,6 +214,13 @@ int wmain(int argc,wchar_t* argv[]){
         patCount++;
     }
 
+    fwprintf(stderr, L"Loaded %d filter patterns.\n", patCount);
+    
+    for(int i=0; i<patCount; i++) {
+        fwprintf(stderr, L"Pattern %d: %s (neg=%d, anchored=%d, dirOnly=%d)\n", 
+            i+1, pats[i].text, pats[i].neg, pats[i].anchored, pats[i].dirOnly);
+    }
+
     DirQueue q={0};
     if (!q_init(&q)) {
         fwprintf(stderr,L"Queue init failed\n");
@@ -227,8 +236,15 @@ int wmain(int argc,wchar_t* argv[]){
     a.shutdown = &shutdown;
     a.pats = pats;
     a.patCount = patCount;
-    wcscpy_s(a.root, MAX_PATH_LEN, args->path);
     a.threadCount = args->numThreads;
+
+    DWORD length = GetFullPathNameW(args->path, MAX_PATH_LEN, a.root, NULL);
+    fwprintf(stderr, L"Full path of root: %s\n", a.root);
+
+    if (length == 0 || length >= MAX_PATH_LEN) {
+        fwprintf(stderr, L"Failed to get full path of root: %s\n", args->path);
+        safe_exit(1, args, pats, &q);
+    }
 
     InitializeCriticalSection(&seenCS);  // init dedup CS
 
